@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard LKE Zona Integritas – FIPP UNNES 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --primary: #1a3c6e;
+    --secondary: #2e7d32;
+    --accent: #f57c00;
+    --danger: #c62828;
+    --light: #f4f6fb;
+    --card: #ffffff;
+    --border: #e0e6ef;
+    --text: #1a2340;
+    --muted: #6b7a99;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); color: var(--text); }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #1a3c6e 0%, #2563a8 100%);
+    color: white; padding: 20px 32px;
+    display: flex; align-items: center; gap: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  .logo { width: 60px; height: 60px; background: white; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-weight: 900;
+    color: var(--primary); font-size: 18px; flex-shrink: 0; }
+  header h1 { font-size: 1.3rem; font-weight: 700; }
+  header p { font-size: 0.85rem; opacity: 0.85; margin-top: 3px; }
+  .badge-wbk { background: #f59e0b; color: #1a1a1a; font-size: 0.75rem;
+    font-weight: 700; padding: 3px 10px; border-radius: 20px; margin-left: auto; white-space: nowrap; }
+
+  /* NAV TABS */
+  .tab-nav { background: white; border-bottom: 2px solid var(--border);
+    display: flex; gap: 0; padding: 0 32px; position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07); overflow-x: auto; }
+  .tab-btn { padding: 14px 22px; border: none; background: none; cursor: pointer;
+    font-size: 0.88rem; font-weight: 600; color: var(--muted);
+    border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; }
+  .tab-btn:hover { color: var(--primary); }
+  .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  /* MAIN */
+  main { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* CARDS */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .kpi-card {
+    background: var(--card); border-radius: 12px; padding: 20px 22px;
+    border-left: 5px solid var(--primary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: transform 0.15s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); }
+  .kpi-card.green { border-left-color: var(--secondary); }
+  .kpi-card.orange { border-left-color: var(--accent); }
+  .kpi-card.red { border-left-color: var(--danger); }
+  .kpi-card .label { font-size: 0.78rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .kpi-card .value { font-size: 2rem; font-weight: 800; margin: 4px 0; }
+  .kpi-card .sub { font-size: 0.8rem; color: var(--muted); }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+  @media(max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } main { padding: 16px; } }
+
+  .card { background: var(--card); border-radius: 12px; padding: 22px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 16px; color: var(--primary);
+    border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  .chart-wrap { position: relative; height: 280px; }
+  .chart-wrap-lg { position: relative; height: 340px; }
+
+  /* GAUGE */
+  .gauge-container { display: flex; flex-direction: column; align-items: center; padding: 10px 0; }
+  .gauge-wrap { position: relative; width: 220px; height: 120px; }
+  .gauge-score { text-align: center; margin-top: 8px; }
+  .gauge-score .num { font-size: 2.8rem; font-weight: 900; color: var(--primary); }
+  .gauge-score .denom { font-size: 1rem; color: var(--muted); }
+  .gauge-label { font-size: 0.88rem; color: var(--muted); margin-top: 4px; }
+  .predikat-badge { display: inline-block; margin-top: 10px; padding: 5px 18px;
+    border-radius: 20px; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.5px; }
+  .predikat-wbk { background: #e8f5e9; color: #2e7d32; border: 1.5px solid #81c784; }
+  .predikat-belum { background: #fff3e0; color: #e65100; border: 1.5px solid #ffb74d; }
+
+  /* PROGRESS BARS */
+  .prog-list { display: flex; flex-direction: column; gap: 12px; }
+  .prog-item .prog-header { display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 5px; }
+  .prog-item .prog-name { font-weight: 600; color: var(--text); }
+  .prog-item .prog-pct { font-weight: 700; }
+  .prog-bar { height: 10px; background: #e8edf5; border-radius: 6px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 6px; transition: width 1s ease; }
+  .fill-green { background: linear-gradient(90deg, #43a047, #81c784); }
+  .fill-blue { background: linear-gradient(90deg, #1565c0, #42a5f5); }
+  .fill-orange { background: linear-gradient(90deg, #e65100, #ffa726); }
+  .fill-red { background: linear-gradient(90deg, #b71c1c, #ef5350); }
+
+  /* TABLE */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  th { background: #1a3c6e; color: white; padding: 10px 12px; text-align: left; font-weight: 600; }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  tr:nth-child(even) td { background: #f8fafd; }
+  tr:hover td { background: #eef2ff; }
+  .tag { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 0.78rem; font-weight: 700; }
+  .tag-a { background: #e8f5e9; color: #2e7d32; }
+  .tag-b { background: #fff8e1; color: #f57f17; }
+  .tag-c { background: #fce4ec; color: #b71c1c; }
+  .tag-ya { background: #e3f2fd; color: #1565c0; }
+
+  /* PENILAI PILLS */
+  .penilai-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .penilai-pill { padding: 6px 16px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
+  .penilai-pill.self { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
+  .penilai-pill.tp { background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7; }
+  .penilai-pill.tpsk { background: #fff3e0; color: #e65100; border-color: #ffcc80; }
+  .penilai-pill.active, .penilai-pill:hover { filter: brightness(0.92); transform: scale(1.03); }
+
+  /* SECTION TITLE */
+  .section-title { font-size: 1.05rem; font-weight: 700; color: var(--primary);
+    margin: 24px 0 14px; display: flex; align-items: center; gap: 8px; }
+  .section-title::before { content: ''; width: 4px; height: 20px; background: var(--primary); border-radius: 2px; }
+
+  /* FILTER */
+  .filter-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  .filter-row select { padding: 7px 14px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 0.85rem; color: var(--text); background: white; cursor: pointer; }
+  .filter-row select:focus { outline: none; border-color: var(--primary); }
+
+  /* INFO BOX */
+  .info-box { background: #e8f4fd; border-left: 4px solid #2196f3; border-radius: 8px;
+    padding: 12px 16px; font-size: 0.85rem; color: #1a3c6e; margin-bottom: 20px; }
+
+  footer { text-align: center; padding: 20px; font-size: 0.78rem; color: var(--muted);
+    border-top: 1px solid var(--border); margin-top: 32px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ZI</div>
+  <div>
+    <h1>Dashboard Evaluasi Zona Integritas – FIPP UNNES</h1>
+    <p>Fakultas Ilmu Pendidikan dan Psikologi · Universitas Negeri Semarang · Tahun 2026</p>
+  </div>
+  <div class="badge-wbk">🏆 Menuju WBK/WBBM</div>
+</header>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="showTab('ringkasan')">📊 Ringkasan Eksekutif</button>
+  <button class="tab-btn" onclick="showTab('pengungkit')">⚙️ Komponen Pengungkit</button>
+  <button class="tab-btn" onclick="showTab('detail')">📋 Detail Penilaian</button>
+  <button class="tab-btn" onclick="showTab('perbandingan')">🔄 Perbandingan Penilai</button>
+</div>
+
+<main>
+
+<!-- ============ TAB 1: RINGKASAN ============ -->
+<div id="tab-ringkasan" class="tab-content active">
+
+  <div class="info-box">
+    ℹ️ Data berdasarkan Lembar Kerja Evaluasi (LKE) Zona Integritas FIPP UNNES 2026. Penilaian dilakukan oleh tiga panel: Self Assessment, TP PTN/LLDIKTI, dan TPSK.
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="label">Skor Total (Self)</div>
+      <div class="value" id="kpi-self" style="color:#1565c0">–</div>
+      <div class="sub">dari 100 poin</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="label">Skor TP PTN/LLDIKTI</div>
+      <div class="value" id="kpi-tp" style="color:#2e7d32">–</div>
+      <div class="sub">dari 100 poin</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="label">Skor TPSK</div>
+      <div class="value" id="kpi-tpsk" style="color:#e65100">–</div>
+      <div class="sub">dari 100 poin</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">Total Pertanyaan</div>
+      <div class="value" style="color:#6b21a8">102</div>
+      <div class="sub">butir indikator</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="label">Komponen Dinilai</div>
+      <div class="value" style="color:#2e7d32">6</div>
+      <div class="sub">area pengungkit</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="label">Sub Komponen</div>
+      <div class="value" style="color:#e65100">24</div>
+      <div class="sub">aspek penilaian</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>🎯 Skor Total per Panel Penilai</h3>
+      <div class="gauge-container">
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="chartGauge"></canvas>
+        </div>
+        <div class="gauge-score">
+          <span class="num" id="gauge-num">–</span>
+          <span class="denom">/100</span>
+        </div>
+        <div class="gauge-label">Rata-rata Skor Pengungkit</div>
+        <span class="predikat-badge predikat-wbk" id="predikat-badge">Memenuhi Syarat WBK</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📊 Perbandingan Skor per Panel</h3>
+      <div class="chart-wrap">
+        <canvas id="chartPanel"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🏗️ Skor per Komponen Pengungkit (Self Assessment)</h3>
+    <div class="chart-wrap-lg">
+      <canvas id="chartKomponen"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB 2: PENGUNGKIT ============ -->
+<div id="tab-pengungkit" class="tab-content">
+
+  <div class="filter-row">
+    <select id="filterPenilai" onchange="renderPengungkit()">
+      <option value="self">Self Assessment</option>
+      <option value="tp">TP PTN/LLDIKTI</option>
+      <option value="tpsk">TPSK</option>
+    </select>
+    <select id="filterSubseksi" onchange="renderPengungkit()">
+      <option value="all">Semua Sub-Seksi</option>
+      <option value="PEMENUHAN">I. Pemenuhan</option>
+      <option value="REFORM">II. Reform</option>
+    </select>
+  </div>
+
+  <div class="section-title">Pemenuhan & Reform – Distribusi Skor per Komponen</div>
+  <div class="card" style="margin-bottom:20px">
+    <h3>📈 Radar Skor 6 Komponen Pengungkit</h3>
+    <div style="max-width:500px;margin:0 auto">
+      <div class="chart-wrap-lg">
+        <canvas id="chartRadar"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>📋 I. Pemenuhan – Skor per Komponen</h3>
+      <div class="prog-list" id="prog-pemenuhan"></div>
+    </div>
+    <div class="card">
+      <h3>🔄 II. Reform – Skor per Komponen</h3>
+      <div class="prog-list" id="prog-reform"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>📊 Perbandingan Pemenuhan vs Reform per Komponen</h3>
+    <div class="chart-wrap-lg">
+      <canvas id="chartPemVsRef"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB 3: DETAIL ============ -->
+<div id="tab-detail" class="tab-content">
+  <div class="filter-row">
+    <select id="filterKompDetail" onchange="renderDetail()">
+      <option value="all">Semua Komponen</option>
+      <option value="MANAJEMEN PERUBAHAN">Manajemen Perubahan</option>
+      <option value="PENATAAN TATALAKSANA">Penataan Tatalaksana</option>
+      <option value="PENATAAN SISTEM MANAJEMEN SDM APARATUR">Manajemen SDM Aparatur</option>
+      <option value="PENGUATAN AKUNTABILITAS">Penguatan Akuntabilitas</option>
+      <option value="PENGUATAN PENGAWASAN">Penguatan Pengawasan</option>
+      <option value="PENINGKATAN KUALITAS PELAYANAN PUBLIK">Kualitas Pelayanan Publik</option>
+    </select>
+    <select id="filterSubseksiDetail" onchange="renderDetail()">
+      <option value="all">Semua Sub-Seksi</option>
+      <option value="PEMENUHAN">I. Pemenuhan</option>
+      <option value="REFORM">II. Reform</option>
+    </select>
+  </div>
+  <div class="card">
+    <h3>📋 Tabel Detail Penilaian Butir Indikator</h3>
+    <div class="tbl-wrap">
+      <table id="tblDetail">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Sub-Seksi</th>
+            <th>Komponen</th>
+            <th>Sub Komponen</th>
+            <th>Pertanyaan</th>
+            <th>Jawaban Self</th>
+            <th>Jawaban TP</th>
+            <th>Jawaban TPSK</th>
+            <th>Skor Self</th>
+            <th>Skor TP</th>
+            <th>Skor TPSK</th>
+          </tr>
+        </thead>
+        <tbody id="tblDetailBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB 4: PERBANDINGAN ============ -->
+<div id="tab-perbandingan" class="tab-content">
+  <div class="section-title">Analisis Kesenjangan Antar Panel Penilai</div>
+
+  <div class="grid-3">
+    <div class="kpi-card">
+      <div class="label">Gap Self vs TP PTN</div>
+      <div class="value" id="gap-self-tp" style="color:#1565c0">–</div>
+      <div class="sub">selisih rata-rata</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="label">Gap Self vs TPSK</div>
+      <div class="value" id="gap-self-tpsk" style="color:#e65100">–</div>
+      <div class="sub">selisih rata-rata</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="label">Gap TP vs TPSK</div>
+      <div class="value" id="gap-tp-tpsk" style="color:#2e7d32">–</div>
+      <div class="sub">selisih rata-rata</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <h3>📊 Perbandingan Skor per Komponen – Semua Panel</h3>
+    <div class="chart-wrap-lg">
+      <canvas id="chartPerbandingan"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🔍 Butir Indikator dengan Perbedaan Penilaian Terbesar</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Komponen</th>
+            <th>Sub Komponen</th>
+            <th>Pertanyaan</th>
+            <th>Self</th>
+            <th>TP PTN</th>
+            <th>TPSK</th>
+            <th>Gap Maks</th>
+          </tr>
+        </thead>
+        <tbody id="tblGap"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Dashboard Zona Integritas FIPP UNNES 2026 · Dibuat otomatis dari LKE · Data: Self Assessment, TP PTN/LLDIKTI, TPSK
+</footer>
+
+<script>
+// =============================================
+// DATA (Parsed from LKE Excel)
+// =============================================
+const DATA = [
+  // section, sub_section, komponen, sub_komponen, pertanyaan_short, pilihan, jawaban_self, jawaban_tp, jawaban_tpsk, skor_self, skor_tp, skor_tpsk
+  // PENGUNGKIT > PEMENUHAN > MANAJEMEN PERUBAHAN
+  ["PENGUNGKIT","PEMENUHAN","MANAJEMEN PERUBAHAN","Penyusunan Tim Kerja","Membentuk tim pembangunan Zona Integritas","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","MANAJEMEN PERUBAHAN","Penyusunan Tim Kerja","Anggota Tim dipilih melalui prosedur jelas","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","MANAJEMEN PERUBAHAN","Rencana Pembangunan Zona Integritas","Terdapat dokumen rencana kerja ZI menuju WBK/WBBM","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","MANAJEMEN PERUBAHAN","Rencana Pembangunan Zona Integritas","Dokumen memuat target prioritas yang relevan","A/B/C","A","B","A",1,0.5,1],
+  ["PENGUNGKIT","PEMENUHAN","MANAJEMEN PERUBAHAN","Rencana Pembangunan Zona Integritas","Terdapat mekanisme sosialisasi pembangunan WBK/WBBM","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","MANAJEMEN PERUBAHAN","Pemantauan dan Evaluasi Pembangunan WBK/WBBM","Seluruh kegiatan pembangunan sesuai rencana","A/B/C/D","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","MANAJEMEN PERUBAHAN","Pemantauan dan Evaluasi Pembangunan WBK/WBBM","Terdapat monitoring dan evaluasi ZI","A/B/C/D","A","A","B",1,1,0.667],
+  ["PENGUNGKIT","PEMENUHAN","MANAJEMEN PERUBAHAN","Pemantauan dan Evaluasi Pembangunan WBK/WBBM","Hasil monev telah ditindaklanjuti","A/B/C/D","A","A","B",1,1,0.667],
+  ["PENGUNGKIT","PEMENUHAN","MANAJEMEN PERUBAHAN","Perubahan pola pikir dan budaya kerja","Pimpinan sebagai role model","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","MANAJEMEN PERUBAHAN","Perubahan pola pikir dan budaya kerja","Agen perubahan telah ditetapkan","A/B/C","A","A","B",1,1,0.5],
+  ["PENGUNGKIT","PEMENUHAN","MANAJEMEN PERUBAHAN","Perubahan pola pikir dan budaya kerja","Telah dibangun budaya kerja dan pola pikir","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","MANAJEMEN PERUBAHAN","Perubahan pola pikir dan budaya kerja","Anggota terlibat pembangunan ZI","A/B/C/D","A","A","B",1,1,0.667],
+
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN TATALAKSANA","Prosedur Operasional Tetap (SOP) Kegiatan Utama","SOP mengacu pada peta proses bisnis","A/B/C/D","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN TATALAKSANA","Prosedur Operasional Tetap (SOP) Kegiatan Utama","SOP telah diterapkan","A/B/C/D/E","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN TATALAKSANA","Prosedur Operasional Tetap (SOP) Kegiatan Utama","SOP telah dievaluasi","A/B/C/D/E","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN TATALAKSANA","Sistem Pemerintahan Berbasis Elektronik (SPBE)","Pengukuran kinerja menggunakan TI","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN TATALAKSANA","Sistem Pemerintahan Berbasis Elektronik (SPBE)","Operasionalisasi SDM menggunakan TI","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN TATALAKSANA","Sistem Pemerintahan Berbasis Elektronik (SPBE)","Pelayanan publik menggunakan TI","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN TATALAKSANA","Sistem Pemerintahan Berbasis Elektronik (SPBE)","Monev pemanfaatan TI telah dilakukan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN TATALAKSANA","Keterbukaan Informasi Publik","Kebijakan keterbukaan informasi diterapkan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN TATALAKSANA","Keterbukaan Informasi Publik","Monitoring keterbukaan informasi dilakukan","A/B/C","A","A","A",1,1,1],
+
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Perencanaan Kebutuhan Pegawai sesuai dengan Kebutuhan Organisasi","Perencanaan kebutuhan pegawai sesuai organisasi","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Perencanaan Kebutuhan Pegawai sesuai dengan Kebutuhan Organisasi","Nama jabatan sesuai peta jabatan","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Perencanaan Kebutuhan Pegawai sesuai dengan Kebutuhan Organisasi","Penempatan pegawai sesuai kompetensi","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Pola Mutasi Internal","Kebijakan mutasi internal telah dibuat","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Pola Mutasi Internal","Mutasi internal dilakukan berdasarkan kompetensi","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Pola Mutasi Internal","Mutasi memperhatikan pola karir pegawai","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Pengembangan Pegawai Berbasis Kompetensi","Kebutuhan pengembangan kompetensi diidentifikasi","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Pengembangan Pegawai Berbasis Kompetensi","Pengembangan kompetensi dilakukan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Pengembangan Pegawai Berbasis Kompetensi","Pelatihan berdampak pada kinerja","A/B/C/D","B","B","B",0.667,0.667,0.667],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Penetapan Kinerja Individu","Penilaian kinerja individu telah ada","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Penetapan Kinerja Individu","Penilaian kinerja terkait kinerja organisasi","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Penetapan Kinerja Individu","Penilaian kinerja dilakukan secara periodik","A/B/C/D","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Penetapan Kinerja Individu","Hasil penilaian kinerja ditindaklanjuti","A/B/C/D","A","A","B",1,1,0.667],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Penegakan Aturan Disiplin/Kode Etik/Kode Perilaku Pegawai","Aturan disiplin/kode etik diterapkan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Penegakan Aturan Disiplin/Kode Etik/Kode Perilaku Pegawai","Pelanggaran disiplin ditindaklanjuti","A/B/C/D","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Sistem Informasi Kepegawaian","Sistem informasi kepegawaian dimanfaatkan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Sistem Informasi Kepegawaian","Data kepegawaian dimutakhirkan secara berkala","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN AKUNTABILITAS","Keterlibatan Pimpinan","Pimpinan terlibat penyusunan perencanaan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN AKUNTABILITAS","Keterlibatan Pimpinan","Pimpinan terlibat penyusunan penetapan kinerja","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN AKUNTABILITAS","Keterlibatan Pimpinan","Pimpinan memantau pencapaian kinerja","A/B/C/D","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN AKUNTABILITAS","Keterlibatan Pimpinan","Pimpinan memberikan arahan dan bimbingan","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN AKUNTABILITAS","Pengelolaan Akuntabilitas Kinerja","Dokumen perencanaan kinerja tersedia","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN AKUNTABILITAS","Pengelolaan Akuntabilitas Kinerja","Pelaporan kinerja dilakukan tepat waktu","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN AKUNTABILITAS","Pengelolaan Akuntabilitas Kinerja","Evaluasi akuntabilitas kinerja dilakukan","A/B/C/D","A","A","B",1,1,0.667],
+
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Pengendalian Gratifikasi","Kebijakan pengendalian gratifikasi ada","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Pengendalian Gratifikasi","Pengendalian gratifikasi diimplementasikan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Pengendalian Gratifikasi","Monev pengendalian gratifikasi dilakukan","A/B/C/D","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Penerapan Sistem Pengendalian Intern Pemerintah (SPIP)","SPIP telah dibangun","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Penerapan Sistem Pengendalian Intern Pemerintah (SPIP)","SPIP telah diimplementasikan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Penerapan Sistem Pengendalian Intern Pemerintah (SPIP)","SPIP dievaluasi secara berkala","A/B/C/D","A","A","B",1,1,0.667],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Pengaduan Masyarakat","Kebijakan pengaduan masyarakat ada","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Pengaduan Masyarakat","Penanganan pengaduan dilaksanakan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Pengaduan Masyarakat","Hasil penanganan pengaduan ditindaklanjuti","A/B/C/D","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Whistle-Blowing System","WBS telah ditetapkan","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Whistle-Blowing System","WBS disosialisasikan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Whistle-Blowing System","WBS diimplementasikan dan dievaluasi","A/B/C/D","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Penanganan Benturan Kepentingan","Kebijakan benturan kepentingan ada","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Penanganan Benturan Kepentingan","Benturan kepentingan diimplementasikan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENGUATAN PENGAWASAN","Penanganan Benturan Kepentingan","Monev benturan kepentingan dilakukan","A/B/C/D","A","A","A",1,1,1],
+
+  ["PENGUNGKIT","PEMENUHAN","PENINGKATAN KUALITAS PELAYANAN PUBLIK","Standar Pelayanan","Standar pelayanan ditetapkan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENINGKATAN KUALITAS PELAYANAN PUBLIK","Standar Pelayanan","Standar pelayanan dimaklumatkan","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENINGKATAN KUALITAS PELAYANAN PUBLIK","Budaya Pelayanan Prima","Budaya pelayanan prima diterapkan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENINGKATAN KUALITAS PELAYANAN PUBLIK","Budaya Pelayanan Prima","Inovasi pelayanan dilakukan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENINGKATAN KUALITAS PELAYANAN PUBLIK","Pengelolaan Pengaduan","Sistem pengaduan tersedia","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENINGKATAN KUALITAS PELAYANAN PUBLIK","Pengelolaan Pengaduan","Pengaduan ditindaklanjuti","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENINGKATAN KUALITAS PELAYANAN PUBLIK","Penilaian Kepuasan terhadap Pelayanan","Survei kepuasan pelayanan dilakukan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENINGKATAN KUALITAS PELAYANAN PUBLIK","Penilaian Kepuasan terhadap Pelayanan","Hasil survei kepuasan ditindaklanjuti","A/B/C/D","A","A","B",1,1,0.667],
+  ["PENGUNGKIT","PEMENUHAN","PENINGKATAN KUALITAS PELAYANAN PUBLIK","Pemanfaatan Teknologi Informasi","Teknologi informasi dimanfaatkan dalam pelayanan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","PEMENUHAN","PENINGKATAN KUALITAS PELAYANAN PUBLIK","Pemanfaatan Teknologi Informasi","TI meningkatkan kualitas pelayanan","A/B/C","A","A","A",1,1,1],
+
+  // REFORM
+  ["PENGUNGKIT","REFORM","MANAJEMEN PERUBAHAN","Komitmen dalam perubahan","Komitmen pimpinan dalam perubahan terwujud","A/B/C","A","A","B",1,1,0.5],
+  ["PENGUNGKIT","REFORM","MANAJEMEN PERUBAHAN","Komitmen dalam perubahan","Perilaku sesuai nilai-nilai ZI","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","MANAJEMEN PERUBAHAN","Komitmen dalam perubahan","Perubahan organisasi berdampak positif","A/B/C/D","A","A","B",1,1,0.667],
+  ["PENGUNGKIT","REFORM","MANAJEMEN PERUBAHAN","Komitmen Pimpinan","Pimpinan menjadi teladan perubahan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","MANAJEMEN PERUBAHAN","Komitmen Pimpinan","Pimpinan aktif mendorong reformasi birokrasi","A/B/C/D","A","A","B",1,1,0.667],
+  ["PENGUNGKIT","REFORM","MANAJEMEN PERUBAHAN","Membangun Budaya Kerja","Budaya kerja positif telah terbangun","A/B/C","A","A","B",1,1,0.5],
+  ["PENGUNGKIT","REFORM","MANAJEMEN PERUBAHAN","Membangun Budaya Kerja","Budaya kerja berdampak pada kinerja","A/B/C/D","A","A","B",1,1,0.667],
+
+  ["PENGUNGKIT","REFORM","PENATAAN TATALAKSANA","Peta Proses Bisnis Mempengaruhi Penyederhanaan Jabatan","Peta proses bisnis disederhanakan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","PENATAAN TATALAKSANA","Sistem Pemerintahan Berbasis Elektronik (SPBE) yang Terintegrasi","SPBE terintegrasi antar sistem","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","PENATAAN TATALAKSANA","Sistem Pemerintahan Berbasis Elektronik (SPBE) yang Terintegrasi","SPBE berdampak pada efisiensi","A/B/C/D","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","PENATAAN TATALAKSANA","Transformasi Digital Memberikan Nilai Manfaat","Transformasi digital memberikan manfaat layanan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","PENATAAN TATALAKSANA","Transformasi Digital Memberikan Nilai Manfaat","Inovasi digital diimplementasikan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","PENATAAN TATALAKSANA","Transformasi Digital Memberikan Nilai Manfaat","Manfaat transformasi digital terukur","A/B/C/D","A","A","B",1,1,0.667],
+
+  ["PENGUNGKIT","REFORM","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Kinerja Individu","Penilaian kinerja berdampak pada pengembangan","A/B/C","A","A","B",1,1,0.5],
+  ["PENGUNGKIT","REFORM","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Kinerja Individu","Kinerja individu meningkat secara terukur","A/B/C/D","A","A","B",1,1,0.667],
+  ["PENGUNGKIT","REFORM","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Assessment Pegawai","Assessment pegawai dilakukan","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Assessment Pegawai","Hasil assessment dimanfaatkan untuk pengembangan","A/B/C/D","A","A","B",1,1,0.667],
+  ["PENGUNGKIT","REFORM","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Pelanggaran Disiplin Pegawai","Pelanggaran disiplin menurun","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","PENATAAN SISTEM MANAJEMEN SDM APARATUR","Pelanggaran Disiplin Pegawai","Sanksi disiplin diterapkan konsisten","A/B/C/D","A","A","A",1,1,1],
+
+  ["PENGUNGKIT","REFORM","PENGUATAN AKUNTABILITAS","Efektifitas dan Efisiensi Anggaran","Efisiensi anggaran terwujud","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","PENGUATAN AKUNTABILITAS","Efektifitas dan Efisiensi Anggaran","Penyerapan anggaran tepat waktu dan sasaran","A/B/C/D","A","A","B",1,1,0.667],
+  ["PENGUNGKIT","REFORM","PENGUATAN AKUNTABILITAS","Kinerja Organisasi","Kinerja organisasi meningkat","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","PENGUATAN AKUNTABILITAS","Kinerja Organisasi","Target kinerja tercapai","A/B/C/D","A","A","A",1,1,1],
+
+  ["PENGUNGKIT","REFORM","PENGUATAN PENGAWASAN","Penurunan Temuan BPK/APIP","Temuan BPK/APIP menurun","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","PENGUATAN PENGAWASAN","Penurunan Temuan BPK/APIP","Tindak lanjut rekomendasi selesai","A/B/C/D","A","A","B",1,1,0.667],
+  ["PENGUNGKIT","REFORM","PENGUATAN PENGAWASAN","Kasus Korupsi","Tidak ada kasus korupsi","Ya/Tidak","Ya","Ya","Ya",1,1,1],
+  ["PENGUNGKIT","REFORM","PENGUATAN PENGAWASAN","Kasus Korupsi","Pencegahan korupsi dilakukan secara aktif","A/B/C","A","A","A",1,1,1],
+
+  ["PENGUNGKIT","REFORM","PENINGKATAN KUALITAS PELAYANAN PUBLIK","Nilai Kepuasan Masyarakat","Nilai SKM meningkat","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","PENINGKATAN KUALITAS PELAYANAN PUBLIK","Nilai Kepuasan Masyarakat","SKM di atas standar nasional","A/B/C/D","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","PENINGKATAN KUALITAS PELAYANAN PUBLIK","Kualitas Pelayanan","Inovasi pelayanan berdampak nyata","A/B/C","A","A","A",1,1,1],
+  ["PENGUNGKIT","REFORM","PENINGKATAN KUALITAS PELAYANAN PUBLIK","Kualitas Pelayanan","Penghargaan pelayanan diraih","A/B/C/D","A","A","B",1,1,0.667],
+];
+
+// BOBOT per sub_komponen (simplified for scoring)
+const BOBOT_KOMPONEN = {
+  "PEMENUHAN": {
+    "MANAJEMEN PERUBAHAN": 4,
+    "PENATAAN TATALAKSANA": 3.5,
+    "PENATAAN SISTEM MANAJEMEN SDM APARATUR": 5,
+    "PENGUATAN AKUNTABILITAS": 5,
+    "PENGUATAN PENGAWASAN": 7.5,
+    "PENINGKATAN KUALITAS PELAYANAN PUBLIK": 5
+  },
+  "REFORM": {
+    "MANAJEMEN PERUBAHAN": 4,
+    "PENATAAN TATALAKSANA": 3.5,
+    "PENATAAN SISTEM MANAJEMEN SDM APARATUR": 5,
+    "PENGUATAN AKUNTABILITAS": 5,
+    "PENGUATAN PENGAWASAN": 7.5,
+    "PENINGKATAN KUALITAS PELAYANAN PUBLIK": 5
+  }
+};
+
+const KOMPS = ["MANAJEMEN PERUBAHAN","PENATAAN TATALAKSANA","PENATAAN SISTEM MANAJEMEN SDM APARATUR","PENGUATAN AKUNTABILITAS","PENGUATAN PENGAWASAN","PENINGKATAN KUALITAS PELAYANAN PUBLIK"];
+const KOMP_SHORT = ["Manajemen\nPerubahan","Penataan\nTatalaksana","SDM\nAparatur","Penguatan\nAkuntabilitas","Penguatan\nPengawasan","Kualitas\nPelayanan"];
+
+// =============================================
+// COMPUTE SCORES
+// =============================================
+function avgScore(rows, key) {
+  if (!rows.length) return 0;
+  return rows.reduce((s,r) => s + r[key], 0) / rows.length;
+}
+
+function scoreByKomponen(subseksi, penilaiKey) {
+  return KOMPS.map(k => {
+    const rows = DATA.filter(d => d[2] === k && (subseksi === 'all' || d[1] === subseksi));
+    return +(avgScore(rows, penilaiKey) * 100).toFixed(1);
+  });
+}
+
+const keyMap = { self: 9, tp: 10, tpsk: 11 };
+
+// Total scores
+function totalScore(penilaiKey) {
+  const totalQ = DATA.length;
+  return +(DATA.reduce((s,d) => s + d[penilaiKey], 0) / totalQ * 100).toFixed(1);
+}
+
+// =============================================
+// CHARTS
+// =============================================
+let charts = {};
+
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function initCharts() {
+  const sS = totalScore(9), sTP = totalScore(10), sTSK = totalScore(11);
+  const avg = +((sS + sTP + sTSK) / 3).toFixed(1);
+
+  document.getElementById('kpi-self').textContent = sS;
+  document.getElementById('kpi-tp').textContent = sTP;
+  document.getElementById('kpi-tpsk').textContent = sTSK;
+  document.getElementById('gauge-num').textContent = avg;
+
+  const badge = document.getElementById('predikat-badge');
+  if (avg >= 75) { badge.textContent = '✅ Memenuhi Syarat WBK'; badge.className = 'predikat-badge predikat-wbk'; }
+  else { badge.textContent = '⚠️ Belum Memenuhi WBK'; badge.className = 'predikat-badge predikat-belum'; }
+
+  const gapST = +(Math.abs(sS - sTP)).toFixed(1);
+  const gapSTSK = +(Math.abs(sS - sTSK)).toFixed(1);
+  const gapTTSK = +(Math.abs(sTP - sTSK)).toFixed(1);
+  document.getElementById('gap-self-tp').textContent = gapST;
+  document.getElementById('gap-self-tpsk').textContent = gapSTSK;
+  document.getElementById('gap-tp-tpsk').textContent = gapTTSK;
+
+  // Gauge (doughnut half)
+  destroyChart('gauge');
+  const gCtx = document.getElementById('chartGauge').getContext('2d');
+  charts['gauge'] = new Chart(gCtx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [avg, 100 - avg],
+        backgroundColor: [avg >= 75 ? '#2e7d32' : '#e65100', '#e8edf5'],
+        borderWidth: 0, circumference: 180, rotation: 270
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '75%',
+      plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+  });
+
+  // Panel bar
+  destroyChart('panel');
+  const pCtx = document.getElementById('chartPanel').getContext('2d');
+  charts['panel'] = new Chart(pCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Self Assessment', 'TP PTN/LLDIKTI', 'TPSK'],
+      datasets: [{
+        label: 'Skor (%)', data: [sS, sTP, sTSK],
+        backgroundColor: ['#1565c0','#2e7d32','#e65100'],
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' }, grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Komponen bar
+  destroyChart('komponen');
+  const kCtx = document.getElementById('chartKomponen').getContext('2d');
+  const kScores = scoreByKomponen('all', 9);
+  charts['komponen'] = new Chart(kCtx, {
+    type: 'bar',
+    data: {
+      labels: KOMP_SHORT,
+      datasets: [{
+        label: 'Skor Self (%)', data: kScores,
+        backgroundColor: kScores.map(s => s >= 90 ? '#2e7d32' : s >= 75 ? '#f57c00' : '#c62828'),
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' }, grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+function renderPengungkit() {
+  const penilai = document.getElementById('filterPenilai').value;
+  const subseksi = document.getElementById('filterSubseksiDetail') ? 'all' : 'all';
+  const key = keyMap[penilai];
+
+  // Radar
+  destroyChart('radar');
+  const rCtx = document.getElementById('chartRadar').getContext('2d');
+  const rSelf = scoreByKomponen('all', 9);
+  const rTP = scoreByKomponen('all', 10);
+  const rTSK = scoreByKomponen('all', 11);
+  charts['radar'] = new Chart(rCtx, {
+    type: 'radar',
+    data: {
+      labels: ['Manajemen\nPerubahan', 'Penataan\nTatalaksana', 'SDM Aparatur', 'Akuntabilitas', 'Pengawasan', 'Pelayanan\nPublik'],
+      datasets: [
+        { label: 'Self', data: rSelf, borderColor: '#1565c0', backgroundColor: 'rgba(21,101,192,0.1)', pointBackgroundColor: '#1565c0', borderWidth: 2 },
+        { label: 'TP PTN', data: rTP, borderColor: '#2e7d32', backgroundColor: 'rgba(46,125,50,0.1)', pointBackgroundColor: '#2e7d32', borderWidth: 2 },
+        { label: 'TPSK', data: rTSK, borderColor: '#e65100', backgroundColor: 'rgba(230,81,0,0.1)', pointBackgroundColor: '#e65100', borderWidth: 2 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } } },
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 12 } } } }
+    }
+  });
+
+  // Progress bars PEMENUHAN
+  const pemDiv = document.getElementById('prog-pemenuhan');
+  pemDiv.innerHTML = '';
+  const colors = ['fill-green','fill-blue','fill-blue','fill-blue','fill-green','fill-blue'];
+  KOMPS.forEach((k, i) => {
+    const rows = DATA.filter(d => d[2] === k && d[1] === 'PEMENUHAN');
+    const sc = +(avgScore(rows, key) * 100).toFixed(1);
+    const color = sc >= 90 ? 'fill-green' : sc >= 75 ? 'fill-blue' : 'fill-orange';
+    pemDiv.innerHTML += `
+      <div class="prog-item">
+        <div class="prog-header">
+          <span class="prog-name">${k.replace('PENATAAN SISTEM MANAJEMEN SDM APARATUR','SDM Aparatur')}</span>
+          <span class="prog-pct" style="color:${sc>=90?'#2e7d32':sc>=75?'#1565c0':'#e65100'}">${sc}%</span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill ${color}" style="width:${sc}%"></div></div>
+      </div>`;
+  });
+
+  // Progress bars REFORM
+  const refDiv = document.getElementById('prog-reform');
+  refDiv.innerHTML = '';
+  KOMPS.forEach((k, i) => {
+    const rows = DATA.filter(d => d[2] === k && d[1] === 'REFORM');
+    if (!rows.length) return;
+    const sc = +(avgScore(rows, key) * 100).toFixed(1);
+    const color = sc >= 90 ? 'fill-green' : sc >= 75 ? 'fill-blue' : 'fill-orange';
+    refDiv.innerHTML += `
+      <div class="prog-item">
+        <div class="prog-header">
+          <span class="prog-name">${k.replace('PENATAAN SISTEM MANAJEMEN SDM APARATUR','SDM Aparatur')}</span>
+          <span class="prog-pct" style="color:${sc>=90?'#2e7d32':sc>=75?'#1565c0':'#e65100'}">${sc}%</span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill ${color}" style="width:${sc}%"></div></div>
+      </div>`;
+  });
+
+  // Pemenuhan vs Reform bar
+  destroyChart('pemvsref');
+  const pvCtx = document.getElementById('chartPemVsRef').getContext('2d');
+  const pemScores = KOMPS.map(k => {
+    const rows = DATA.filter(d => d[2] === k && d[1] === 'PEMENUHAN');
+    return +(avgScore(rows, key) * 100).toFixed(1);
+  });
+  const refScores = KOMPS.map(k => {
+    const rows = DATA.filter(d => d[2] === k && d[1] === 'REFORM');
+    return rows.length ? +(avgScore(rows, key) * 100).toFixed(1) : 0;
+  });
+  charts['pemvsref'] = new Chart(pvCtx, {
+    type: 'bar',
+    data: {
+      labels: KOMP_SHORT,
+      datasets: [
+        { label: 'Pemenuhan', data: pemScores, backgroundColor: '#1565c0', borderRadius: 5 },
+        { label: 'Reform', data: refScores, backgroundColor: '#e65100', borderRadius: 5 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' }, grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderDetail() {
+  const kompFilter = document.getElementById('filterKompDetail').value;
+  const subsFilter = document.getElementById('filterSubseksiDetail').value;
+  const tbody = document.getElementById('tblDetailBody');
+  tbody.innerHTML = '';
+  let rows = DATA;
+  if (kompFilter !== 'all') rows = rows.filter(d => d[2] === kompFilter);
+  if (subsFilter !== 'all') rows = rows.filter(d => d[1] === subsFilter);
+  rows.forEach((d, i) => {
+    const tagColor = (v) => {
+      if (v === 'Ya') return `<span class="tag tag-ya">Ya</span>`;
+      if (v === 'A') return `<span class="tag tag-a">A</span>`;
+      if (v === 'B') return `<span class="tag tag-b">B</span>`;
+      if (v === 'C' || v === 'D') return `<span class="tag tag-c">${v}</span>`;
+      return v || '–';
+    };
+    const sColor = (s) => s >= 0.9 ? '#2e7d32' : s >= 0.5 ? '#e65100' : '#c62828';
+    tbody.innerHTML += `<tr>
+      <td>${i+1}</td>
+      <td><span style="font-size:0.78rem;background:#e3f2fd;color:#1565c0;padding:2px 7px;border-radius:8px">${d[1]}</span></td>
+      <td style="font-size:0.8rem">${d[2].replace('PENATAAN SISTEM MANAJEMEN SDM APARATUR','SDM Aparatur')}</td>
+      <td style="font-size:0.8rem">${d[3]}</td>
+      <td style="font-size:0.8rem;max-width:200px">${d[4]}</td>
+      <td>${tagColor(d[6])}</td>
+      <td>${tagColor(d[7])}</td>
+      <td>${tagColor(d[8])}</td>
+      <td style="font-weight:700;color:${sColor(d[9])}">${(d[9]*100).toFixed(0)}%</td>
+      <td style="font-weight:700;color:${sColor(d[10])}">${(d[10]*100).toFixed(0)}%</td>
+      <td style="font-weight:700;color:${sColor(d[11])}">${(d[11]*100).toFixed(0)}%</td>
+    </tr>`;
+  });
+}
+
+function renderPerbandingan() {
+  // Grouped bar all 3 penilai per komponen
+  destroyChart('perbandingan');
+  const ctx = document.getElementById('chartPerbandingan').getContext('2d');
+  charts['perbandingan'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: KOMP_SHORT,
+      datasets: [
+        { label: 'Self', data: scoreByKomponen('all', 9), backgroundColor: '#1565c0', borderRadius: 4 },
+        { label: 'TP PTN/LLDIKTI', data: scoreByKomponen('all', 10), backgroundColor: '#2e7d32', borderRadius: 4 },
+        { label: 'TPSK', data: scoreByKomponen('all', 11), backgroundColor: '#e65100', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' }, grid: { color: '#f0f0f0' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Gap table
+  const gapRows = DATA.map(d => ({
+    ...d, gap: +(Math.max(d[9], d[10], d[11]) - Math.min(d[9], d[10], d[11])).toFixed(3)
+  })).sort((a,b) => b.gap - a.gap).slice(0, 15);
+
+  const tbody = document.getElementById('tblGap');
+  tbody.innerHTML = '';
+  gapRows.forEach((d, i) => {
+    const gColor = d.gap > 0.3 ? '#c62828' : d.gap > 0.1 ? '#e65100' : '#2e7d32';
+    tbody.innerHTML += `<tr>
+      <td>${i+1}</td>
+      <td style="font-size:0.8rem">${d[2].replace('PENATAAN SISTEM MANAJEMEN SDM APARATUR','SDM Aparatur')}</td>
+      <td style="font-size:0.8rem">${d[3]}</td>
+      <td style="font-size:0.8rem;max-width:180px">${d[4]}</td>
+      <td style="font-weight:700;color:#1565c0">${(d[9]*100).toFixed(0)}%</td>
+      <td style="font-weight:700;color:#2e7d32">${(d[10]*100).toFixed(0)}%</td>
+      <td style="font-weight:700;color:#e65100">${(d[11]*100).toFixed(0)}%</td>
+      <td style="font-weight:800;color:${gColor}">${(d.gap*100).toFixed(0)}%</td>
+    </tr>`;
+  });
+}
+
+// =============================================
+// TAB NAVIGATION
+// =============================================
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+
+  if (name === 'pengungkit') renderPengungkit();
+  else if (name === 'detail') renderDetail();
+  else if (name === 'perbandingan') renderPerbandingan();
+}
+
+// =============================================
+// INIT
+// =============================================
+window.addEventListener('load', () => {
+  initCharts();
+  renderDetail();
+  renderPengungkit();
+});
+</script>
+</body>
+</html>
